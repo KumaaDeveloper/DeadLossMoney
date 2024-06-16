@@ -1,0 +1,18 @@
+# Configurasi DeadLossMoney By KumaDev
+
+# Wajib Install DeVirions
+# Pasang LibPiggyEconomy Pada Virion
+
+# PlayerDead settings
+# Pesan yang akan ditampilkan ketika pemain mati dan respawn
+death_message: "§cKamu Kehilangan Uang §e{UANG_MATI} §cSaat Mati."
+
+# Mengatur pemain akan kehilangan uang ketika mati
+money_lost_percentage: 0.05
+
+# Pesan sisa uang player
+money_message: "§aSisa Uang Kamu Sebesar §e{UANG_KAMU}."
+
+# Pilih Economy Yang Kamu Gunakan ("economyapi"/"bedrockeconomy")
+economy:
+  provider: "economyapi"
