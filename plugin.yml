@@ -4,6 +4,5 @@ api: [5.0.0]
 main: KumaDev\DeadLossMoney\Main
 author: KumaDeveloper
 description: A plugin to reduce your money when you die
-depend:
+dependencies:
   - libPiggyEconomy
-  - EconomyAPI/BedrockEconomy
