@@ -22,13 +22,15 @@ class Main extends PluginBase implements Listener {
 
     /** @var array */
     private $deathMessages = [];
+    /** @var array */
+    private $moneyLost = [];
 
     public function onEnable(): void {
         $this->getServer()->getPluginManager()->registerEvents($this, $this);
 
         // Check for required dependencies
         if (!class_exists(libPiggyEconomy::class)) {
-            $this->getLogger()->error("[DeadLossMoney] libPiggyEconomy virion not found. Please download DeVirion Now!.");
+            $this->getLogger()->error("[DeadLossMoney] libPiggyEconomy virion not found. Please download DeVirion Now!");
             $this->getServer()->getPluginManager()->disablePlugin($this);
             return;
         }
@@ -66,35 +68,36 @@ class Main extends PluginBase implements Listener {
         $player = $event->getPlayer();
         $moneyLostPercentage = $this->config->get("money_lost_percentage", 0.05);
 
-        self::$economyProvider->getMoney($player, function (float $money) use ($player, $moneyLostPercentage) {
+        $this->getEconomyProvider()->getMoney($player, function (float $money) use ($player, $moneyLostPercentage) {
             $moneyLost = round($money * $moneyLostPercentage, 2);
-
-            self::$economyProvider->takeMoney($player, $moneyLost, function (bool $success) use ($player, $moneyLost) {
-                if ($success) {
-                    // Store the death message for the player
-                    $deathMessage = str_replace("{MONEY_LOSSMONEY}", $moneyLost, $this->config->get("death_message", "§cYou Lost Money §e{MONEY_LOSSMONEY} §cWhen Dead."));
-                    $this->deathMessages[$player->getName()] = $deathMessage;
-                } else {
-                    $player->sendMessage(TextFormat::RED . "An error occurred while reducing your money.");
-                    $this->getLogger()->warning("Failed to reduce player's money.");
-                }
+            $this->getEconomyProvider()->takeMoney($player, $moneyLost, function () use ($player, $money, $moneyLost) {
+                $moneyRemaining = $money - $moneyLost;
+                $message = $this->config->get("money_message", "§aYour remaining money is §e{YOUR_MONEY}.");
+                $message = str_replace("{YOUR_MONEY}", number_format($moneyRemaining, 2), $message);
+                $this->deathMessages[$player->getName()] = $message;
+                $this->moneyLost[$player->getName()] = $moneyLost;
             });
+
+            $deathMessage = str_replace("{MONEY_LOSSMONEY}", number_format($moneyLost, 2), $this->config->get("death_message", "§cYou Lost Money §e{MONEY_LOSSMONEY} §cWhen Dead."));
+            $this->deathMessages[$player->getName()] = $deathMessage;
         });
     }
 
     public function onPlayerRespawn(PlayerRespawnEvent $event): void {
         $player = $event->getPlayer();
+        $playerName = $player->getName();
 
-        // Send death message if exists
-        if (isset($this->deathMessages[$player->getName()])) {
-            $player->sendMessage(TextFormat::colorize($this->deathMessages[$player->getName()]));
-            unset($this->deathMessages[$player->getName()]); // Clear the message after sending
+        if (isset($this->deathMessages[$playerName])) {
+            $player->sendMessage(TextFormat::colorize($this->deathMessages[$playerName]));
+            unset($this->deathMessages[$playerName]);
         }
 
-        // Send remaining money message
-        self::$economyProvider->getMoney($player, function (float $remainingMoney) use ($player) {
-            $moneyMessage = str_replace("{YOUR_MONEY}", number_format($remainingMoney, 2), $this->config->get("money_message", "§aYour remaining money is §e{YOUR_MONEY}."));
-            $player->sendMessage(TextFormat::colorize($moneyMessage));
-        });
+        if (isset($this->moneyLost[$playerName])) {
+            $moneyLost = $this->moneyLost[$playerName];
+            $message = $this->config->get("money_message", "§aYour remaining money is §e{YOUR_MONEY}.");
+            $message = str_replace("{YOUR_MONEY}", number_format($moneyLost, 2), $message);
+            $player->sendMessage(TextFormat::colorize($message));
+            unset($this->moneyLost[$playerName]);
+        }
     }
 }
