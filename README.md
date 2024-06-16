@@ -28,7 +28,7 @@ economy:
   provider: "economyapi"
 ```
 
-### ✔ Credits & Depend
+## Credits & Depend
 | Authors | Github | Lib |
 |---------|--------|-----|
 | Cooldogepm | [Cooldogepm](https://github.com/cooldogepm) | [BedrockEconomy](https://github.com/cooldogepm/BedrockEconomy) |
