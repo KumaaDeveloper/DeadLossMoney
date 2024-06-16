@@ -24,7 +24,6 @@ class Main extends PluginBase implements Listener {
     private $deathMessages = [];
 
     public function onEnable(): void {
-        $this->getLogger()->info("Plugin DeadLossMoney telah diaktifkan.");
         $this->getServer()->getPluginManager()->registerEvents($this, $this);
 
         // Check for required dependencies
@@ -52,6 +51,9 @@ class Main extends PluginBase implements Listener {
         }
     }
 
+    /**
+     * @return EconomyProvider|null
+     */
     public static function getEconomyProvider(): ?EconomyProvider {
         return self::$economyProvider;
     }
@@ -64,17 +66,17 @@ class Main extends PluginBase implements Listener {
         $player = $event->getPlayer();
         $moneyLostPercentage = $this->config->get("money_lost_percentage", 0.05);
 
-        self::$economyProvider->getMoney($player, function (float $money) use ($player, $moneyLostPercentage, $event) {
+        self::$economyProvider->getMoney($player, function (float $money) use ($player, $moneyLostPercentage) {
             $moneyLost = round($money * $moneyLostPercentage, 2);
 
             self::$economyProvider->takeMoney($player, $moneyLost, function (bool $success) use ($player, $moneyLost) {
                 if ($success) {
                     // Store the death message for the player
-                    $deathMessage = str_replace("{UANG_MATI}", $moneyLost, $this->config->get("death_message", "§cKamu Kehilangan Uang §e{UANG_MATI} §cSaat Mati."));
+                    $deathMessage = str_replace("{MONEY_LOSSMONEY}", $moneyLost, $this->config->get("death_message", "§cYou Lost Money §e{MONEY_LOSSMONEY} §cWhen Dead."));
                     $this->deathMessages[$player->getName()] = $deathMessage;
                 } else {
-                    $player->sendMessage(TextFormat::RED . "Terjadi kesalahan saat mengurangi uangmu.");
-                    $this->getLogger()->warning("Gagal mengurangi uang pemain.");
+                    $player->sendMessage(TextFormat::RED . "An error occurred while reducing your money.");
+                    $this->getLogger()->warning("Failed to reduce player's money.");
                 }
             });
         });
@@ -91,7 +93,7 @@ class Main extends PluginBase implements Listener {
 
         // Send remaining money message
         self::$economyProvider->getMoney($player, function (float $remainingMoney) use ($player) {
-            $moneyMessage = str_replace("{UANG_KAMU}", number_format($remainingMoney, 2), $this->config->get("money_message", "§aSisa Uang Kamu Sebesar §e{UANG_KAMU}."));
+            $moneyMessage = str_replace("{YOUR_MONEY}", number_format($remainingMoney, 2), $this->config->get("money_message", "§aYour remaining money is §e{YOUR_MONEY}."));
             $player->sendMessage(TextFormat::colorize($moneyMessage));
         });
     }

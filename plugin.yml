@@ -3,4 +3,4 @@ version: 1.0.0
 api: [5.0.0]
 main: KumaDev\DeadLossMoney\Main
 author: KumaDeveloper
-description: DeadLossMoney By KumaDeveloper
+description: A plugin to reduce your money when you die
