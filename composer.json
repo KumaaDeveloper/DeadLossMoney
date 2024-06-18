@@ -2,7 +2,6 @@
     "name": "kumadev/deadlossmoney",
     "description": "A PocketMine-MP plugin that deducts money from players when they dieK",
     "type": "project",
-    ""type": "project",
     "require": {
         "dapigguy/libpiggyeconomy": "dev-master"
     },
