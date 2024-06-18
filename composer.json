@@ -1,0 +1,23 @@
+{
+    "name": "KumaDev/DeadLossMoney",
+    "description": "A plugin to reduce your money when you die",
+    "type": "project",
+    "license": "Apache-2.0",
+    "require": {
+        "cooldogedev/bedrockeconomy": "^2.0",
+        "onebone/economyapi": "^5.7"
+    },
+    "require-dev": {
+        "pocketmine/pocketmine-mp": "^5.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "KumaDev\\DeadLossMoney\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "KumaDev"
+        }
+    ]
+}
