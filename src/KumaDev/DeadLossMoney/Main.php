@@ -19,8 +19,6 @@ class Main extends PluginBase implements Listener {
     private $config;
 
     /** @var array */
-    private $deathMessages = [];
-    /** @var array */
     private $moneyLost = [];
 
     public function onEnable(): void {
@@ -58,7 +56,7 @@ class Main extends PluginBase implements Listener {
 
         self::$economyManager->getMoney($player, function (float $money) use ($player, $moneyLostPercentage) {
             $moneyLost = round($money * $moneyLostPercentage, 2);
-            self::$economyManager->reduceMoney($player, $moneyLost, function (bool $success) use ($player, $money, $moneyLost) {
+            self::$economyManager->reduceMoney($player, $moneyLost, function (bool $success) use ($player, $moneyLost) {
                 if ($success) {
                     $this->moneyLost[$player->getName()] = $moneyLost;
                 }
@@ -73,17 +71,21 @@ class Main extends PluginBase implements Listener {
         if (isset($this->moneyLost[$playerName])) {
             // Add a delay before sending the death message
             $this->getScheduler()->scheduleDelayedTask(new ClosureTask(function () use ($player, $playerName): void {
-                $deathMessage = str_replace("{MONEY_LOSSMONEY}", number_format($this->moneyLost[$playerName], 2), $this->config->get("death_message", "§cYou Lost Money §e{MONEY_LOSSMONEY} §cWhen Dead."));
-                $player->sendMessage(TextFormat::colorize($deathMessage));
-                unset($this->moneyLost[$playerName]);
+                if (isset($this->moneyLost[$playerName])) {
+                    $deathMessage = str_replace("{MONEY_LOSSMONEY}", number_format($this->moneyLost[$playerName], 2), $this->config->get("death_message", "§cYou Lost Money §e{MONEY_LOSSMONEY} §cWhen Dead."));
+                    $player->sendMessage(TextFormat::colorize($deathMessage));
+                }
             }), 5); // Delay for 1 second (20 ticks)
 
             // Add a delay before sending the remaining money message
             $this->getScheduler()->scheduleDelayedTask(new ClosureTask(function () use ($player, $playerName): void {
-                self::$economyManager->getMoney($player, function (float $newBalance) use ($player, $playerName) {
-                    $message = $this->config->get("money_message", "§aYour remaining money is §e{YOUR_MONEY}.");
-                    $message = str_replace("{YOUR_MONEY}", number_format($newBalance, 2), $message);
-                    $player->sendMessage(TextFormat::colorize($message));
+                self::$economyManager->getMoney($player, function (float $newBalance) use ($player, $playerName): void {
+                    if (isset($this->moneyLost[$playerName])) {
+                        $message = $this->config->get("money_message", "§aYour remaining money is §e{YOUR_MONEY}.");
+                        $message = str_replace("{YOUR_MONEY}", number_format($newBalance, 2), $message);
+                        $player->sendMessage(TextFormat::colorize($message));
+                        unset($this->moneyLost[$playerName]);
+                    }
                 });
             }), 6); // Delay for 1.1 second (22 ticks)
         }
