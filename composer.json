@@ -2,13 +2,13 @@
     "name": "kumadev/deadlossmoney",
     "description": "A PocketMine-MP plugin that deducts money from players when they dieK",
     "type": "project",
+    ""type": "project",
     "require": {
-        "onebone/economyapi": "dev-master",
-        "cooldogedev/bedrockeconomy": "dev-master"
+        "dapigguy/libpiggyeconomy": "dev-master"
     },
     "autoload": {
         "psr-4": {
-            "KumaDev\\DeadLossMoney\\": "src/"
+            "KumaDev\\AFKLossMoney\\": "src/"
         }
     }
 }
