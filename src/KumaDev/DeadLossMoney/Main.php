@@ -8,14 +8,12 @@ use pocketmine\event\player\PlayerRespawnEvent;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\Config;
 use pocketmine\utils\TextFormat;
-use DaPigGuy\libPiggyEconomy\libPiggyEconomy;
-use DaPigGuy\libPiggyEconomy\providers\EconomyProvider;
-use DaPigGuy\libPiggyEconomy\exceptions\MissingProviderDependencyException;
+use pocketmine\scheduler\ClosureTask;
 
 class Main extends PluginBase implements Listener {
 
-    /** @var EconomyProvider|null */
-    private static $economyProvider;
+    /** @var EconomyManager|null */
+    private static $economyManager;
 
     /** @var Config */
     private $config;
@@ -28,36 +26,26 @@ class Main extends PluginBase implements Listener {
     public function onEnable(): void {
         $this->getServer()->getPluginManager()->registerEvents($this, $this);
 
-        // Check for required dependencies
-        if (!class_exists(libPiggyEconomy::class)) {
-            $this->getLogger()->error("[DeadLossMoney] libPiggyEconomy virion not found. Please download DeVirion Now!");
-            $this->getServer()->getPluginManager()->disablePlugin($this);
-            return;
-        }
-
-        // Initialize economy library
-        libPiggyEconomy::init();
-        
         // Load and save configuration file
         $this->saveResource("config.yml");
         $this->config = new Config($this->getDataFolder() . "config.yml", Config::YAML);
-        $economyConfig = $this->config->get("economy", []);
 
-        // Initialize economy provider
-        try {
-            self::$economyProvider = libPiggyEconomy::getProvider($economyConfig);
-        } catch (MissingProviderDependencyException $e) {
-            $this->getLogger()->error("[DeadLossMoney] Dependencies for provider not found: " . $e->getMessage());
+        // Initialize economy manager
+        self::$economyManager = new EconomyManager($this);
+
+        // Check if any economy plugin is installed
+        if (self::$economyManager->getEconomyPlugin() === null) {
+            $this->getLogger()->error("No supported economy plugin found. Disabling plugin.");
             $this->getServer()->getPluginManager()->disablePlugin($this);
             return;
         }
     }
 
     /**
-     * @return EconomyProvider|null
+     * @return EconomyManager|null
      */
-    public static function getEconomyProvider(): ?EconomyProvider {
-        return self::$economyProvider;
+    public static function getEconomyManager(): ?EconomyManager {
+        return self::$economyManager;
     }
 
     public function getConfig(): Config {
@@ -68,18 +56,13 @@ class Main extends PluginBase implements Listener {
         $player = $event->getPlayer();
         $moneyLostPercentage = $this->config->get("money_lost_percentage", 0.05);
 
-        $this->getEconomyProvider()->getMoney($player, function (float $money) use ($player, $moneyLostPercentage) {
+        self::$economyManager->getMoney($player, function (float $money) use ($player, $moneyLostPercentage) {
             $moneyLost = round($money * $moneyLostPercentage, 2);
-            $this->getEconomyProvider()->takeMoney($player, $moneyLost, function () use ($player, $money, $moneyLost) {
-                $moneyRemaining = $money - $moneyLost;
-                $message = $this->config->get("money_message", "§aYour remaining money is §e{YOUR_MONEY}.");
-                $message = str_replace("{YOUR_MONEY}", number_format($moneyRemaining, 2), $message);
-                $this->deathMessages[$player->getName()] = $message;
-                $this->moneyLost[$player->getName()] = $moneyLost;
+            self::$economyManager->reduceMoney($player, $moneyLost, function (bool $success) use ($player, $money, $moneyLost) {
+                if ($success) {
+                    $this->moneyLost[$player->getName()] = $moneyLost;
+                }
             });
-
-            $deathMessage = str_replace("{MONEY_LOSSMONEY}", number_format($moneyLost, 2), $this->config->get("death_message", "§cYou Lost Money §e{MONEY_LOSSMONEY} §cWhen Dead."));
-            $this->deathMessages[$player->getName()] = $deathMessage;
         });
     }
 
@@ -87,17 +70,22 @@ class Main extends PluginBase implements Listener {
         $player = $event->getPlayer();
         $playerName = $player->getName();
 
-        if (isset($this->deathMessages[$playerName])) {
-            $player->sendMessage(TextFormat::colorize($this->deathMessages[$playerName]));
-            unset($this->deathMessages[$playerName]);
-        }
-
         if (isset($this->moneyLost[$playerName])) {
-            $moneyLost = $this->moneyLost[$playerName];
-            $message = $this->config->get("money_message", "§aYour remaining money is §e{YOUR_MONEY}.");
-            $message = str_replace("{YOUR_MONEY}", number_format($moneyLost, 2), $message);
-            $player->sendMessage(TextFormat::colorize($message));
-            unset($this->moneyLost[$playerName]);
+            // Add a delay before sending the death message
+            $this->getScheduler()->scheduleDelayedTask(new ClosureTask(function () use ($player, $playerName): void {
+                $deathMessage = str_replace("{MONEY_LOSSMONEY}", number_format($this->moneyLost[$playerName], 2), $this->config->get("death_message", "§cYou Lost Money §e{MONEY_LOSSMONEY} §cWhen Dead."));
+                $player->sendMessage(TextFormat::colorize($deathMessage));
+                unset($this->moneyLost[$playerName]);
+            }), 5); // Delay for 1 second (20 ticks)
+
+            // Add a delay before sending the remaining money message
+            $this->getScheduler()->scheduleDelayedTask(new ClosureTask(function () use ($player, $playerName): void {
+                self::$economyManager->getMoney($player, function (float $newBalance) use ($player, $playerName) {
+                    $message = $this->config->get("money_message", "§aYour remaining money is §e{YOUR_MONEY}.");
+                    $message = str_replace("{YOUR_MONEY}", number_format($newBalance, 2), $message);
+                    $player->sendMessage(TextFormat::colorize($message));
+                });
+            }), 6); // Delay for 1.1 second (22 ticks)
         }
     }
 }
