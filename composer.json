@@ -1,11 +1,18 @@
 {
-    "name": "kumadev/deadlossmoney",
-    "description": "A Minecraft plugin to reduce money upon player death",
-    "type": "project",
+    "name": "kumac/deadlossmoney",
+    "description": "A PocketMine-MP plugin that deducts money from players when they die",
+    "type": "pocketmine-plugin",
+    "license": "Apache-2.0 license",
+    "authors": [
+        {
+            "name": "KumaDev"
+        }
+    ],
     "require": {
+        "php": ">=8.0",
         "pocketmine/pocketmine-mp": "^5.0",
-        "onebone/economyapi": "^5.7",
-        "cooldogedev/bedrockeconomy": "^4.0"
+        "onebone/economyapi": "^3.8",
+        "cooldogedev/bedrockeconomy": "^3.5"
     },
     "autoload": {
         "psr-4": {
