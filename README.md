@@ -10,10 +10,6 @@ DeadLossMoney is a Pocketmine plug-in that functions to reduce player money when
 ```yaml
 # DeadLossMoney Configuration By KumaDev
 
-# Must Install DeVirions
-# Install LibPiggyEconomy on Virion
-
-# PlayerDead settings
 # The message to be displayed when the player dies and respawns
 death_message: "§cYou Lost Money §e{MONEY_LOSSMONEY} §cWhen Dead."
 
@@ -25,10 +21,10 @@ money_message: "§aYour remaining money is §e{YOUR_MONEY}."
 
 # Choose the economy you use ("economyapi"/"bedrockeconomy")
 economy:
-  provider: "economyapi"
+  provider: "bedrockeconomy"
 ```
 
-## Credits & Depend
+## Depend
 | Authors | Github | Lib |
 |---------|--------|-----|
 | Cooldogepm | [Cooldogepm](https://github.com/cooldogepm) | [BedrockEconomy](https://github.com/cooldogepm/BedrockEconomy) |
