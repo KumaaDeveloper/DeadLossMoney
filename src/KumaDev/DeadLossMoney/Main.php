@@ -8,6 +8,7 @@ use pocketmine\event\player\PlayerRespawnEvent;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\Config;
 use pocketmine\utils\TextFormat;
+use pocketmine\scheduler\ClosureTask;
 use DaPigGuy\libPiggyEconomy\libPiggyEconomy;
 use DaPigGuy\libPiggyEconomy\providers\EconomyProvider;
 use DaPigGuy\libPiggyEconomy\exceptions\MissingProviderDependencyException;
@@ -74,8 +75,7 @@ class Main extends PluginBase implements Listener {
                 $moneyRemaining = $money - $moneyLost;
                 $message = $this->config->get("money_message", "§aYour remaining money is §e{YOUR_MONEY}.");
                 $message = str_replace("{YOUR_MONEY}", number_format($moneyRemaining, 2), $message);
-                $this->deathMessages[$player->getName()] = $message;
-                $this->moneyLost[$player->getName()] = $moneyLost;
+                $this->moneyLost[$player->getName()] = $message;
             });
 
             $deathMessage = str_replace("{MONEY_LOSSMONEY}", number_format($moneyLost, 2), $this->config->get("death_message", "§cYou Lost Money §e{MONEY_LOSSMONEY} §cWhen Dead."));
@@ -88,16 +88,18 @@ class Main extends PluginBase implements Listener {
         $playerName = $player->getName();
 
         if (isset($this->deathMessages[$playerName])) {
-            $player->sendMessage(TextFormat::colorize($this->deathMessages[$playerName]));
-            unset($this->deathMessages[$playerName]);
-        }
+            $deathMessage = TextFormat::colorize($this->deathMessages[$playerName]);
+            $player->sendMessage($deathMessage);
 
-        if (isset($this->moneyLost[$playerName])) {
-            $moneyLost = $this->moneyLost[$playerName];
-            $message = $this->config->get("money_message", "§aYour remaining money is §e{YOUR_MONEY}.");
-            $message = str_replace("{YOUR_MONEY}", number_format($moneyLost, 2), $message);
-            $player->sendMessage(TextFormat::colorize($message));
-            unset($this->moneyLost[$playerName]);
+            if (isset($this->moneyLost[$playerName])) {
+                $this->getScheduler()->scheduleDelayedTask(new ClosureTask(function () use ($player, $playerName) {
+                    $message = TextFormat::colorize($this->moneyLost[$playerName]);
+                    $player->sendMessage($message);
+                    unset($this->moneyLost[$playerName]);
+                }), 4); // 4 ticks is approximately 0.2 seconds
+            }
+
+            unset($this->deathMessages[$playerName]);
         }
     }
 }
